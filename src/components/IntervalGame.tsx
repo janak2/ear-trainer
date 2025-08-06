@@ -123,8 +123,7 @@ const IntervalGame: React.FC<IntervalGameProps> = ({
           <div style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '1.1rem' }}>
             <p>Which interval is <strong>larger</strong>?</p>
             <p style={{ fontSize: '0.9rem', color: '#666' }}>
-              First interval: {pair1.interval.name} ({pair1.interval.semitones} semitones)<br/>
-              Second interval: {pair2.interval.name} ({pair2.interval.semitones} semitones)
+              Listen carefully and compare the two intervals
             </p>
           </div>
 
