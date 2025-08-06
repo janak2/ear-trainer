@@ -23,7 +23,7 @@ const IntervalGame: React.FC<IntervalGameProps> = ({
   onNewQuestion,
   isGameActive
 }) => {
-  const { isLoading, isPlaying, playSequence } = usePiano();
+  const { isLoading, isPlaying, playSequence, playSingleInterval } = usePiano();
   const hasPlayedRef = useRef<string | null>(null);
 
   const playBothIntervals = useCallback(async () => {
@@ -36,6 +36,16 @@ const IntervalGame: React.FC<IntervalGameProps> = ({
     
     await playSequence(intervals, 1500);
   }, [pair1, pair2, isPlaying, playSequence]);
+
+  const playFirstInterval = useCallback(async () => {
+    if (!pair1 || isPlaying) return;
+    await playSingleInterval(pair1.baseNote, pair1.secondNote, 800);
+  }, [pair1, isPlaying, playSingleInterval]);
+
+  const playSecondInterval = useCallback(async () => {
+    if (!pair2 || isPlaying) return;
+    await playSingleInterval(pair2.baseNote, pair2.secondNote, 800);
+  }, [pair2, isPlaying, playSingleInterval]);
 
   // Auto-play intervals when new question starts
   useEffect(() => {
@@ -85,10 +95,29 @@ const IntervalGame: React.FC<IntervalGameProps> = ({
               className="button" 
               onClick={playBothIntervals}
               disabled={isPlaying}
-              style={{ fontSize: '1.1rem', padding: '0.75rem 2rem' }}
+              style={{ fontSize: '1.1rem', padding: '0.75rem 2rem', marginBottom: '1rem' }}
             >
-              {isPlaying ? '🔊 Playing...' : '🔊 Replay Intervals'}
+              {isPlaying ? '🔊 Playing...' : '🔊 Replay Both Intervals'}
             </button>
+            
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '1rem' }}>
+              <button 
+                className="button secondary" 
+                onClick={playFirstInterval}
+                disabled={isPlaying}
+                style={{ fontSize: '0.9rem' }}
+              >
+                🔊 First Only
+              </button>
+              <button 
+                className="button secondary" 
+                onClick={playSecondInterval}
+                disabled={isPlaying}
+                style={{ fontSize: '0.9rem' }}
+              >
+                🔊 Second Only
+              </button>
+            </div>
           </div>
 
           <div style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '1.1rem' }}>

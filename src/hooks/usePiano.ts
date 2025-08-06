@@ -109,12 +109,35 @@ export const usePiano = () => {
     }
   }, [audioContext, isPlaying, playNote]);
 
+  const playSingleInterval = useCallback(async (baseNote: Note, secondNote: Note, noteDuration: number = 1000, gap: number = 100) => {
+    if (!audioContext || isPlaying) return;
+    
+    setIsPlaying(true);
+    
+    try {
+      // Play first note
+      await playNote(baseNote, noteDuration);
+      
+      // Wait for gap between notes
+      await new Promise(resolve => setTimeout(resolve, noteDuration + gap));
+      
+      // Play second note
+      await playNote(secondNote, noteDuration);
+      
+      // Wait for second note to finish
+      await new Promise(resolve => setTimeout(resolve, noteDuration));
+    } finally {
+      setIsPlaying(false);
+    }
+  }, [audioContext, isPlaying, playNote]);
+
   return {
     audioContext,
     isLoading,
     isPlaying,
     playNote,
     playInterval,
+    playSingleInterval,
     playSequence
   };
 };

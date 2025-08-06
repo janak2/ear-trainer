@@ -23,12 +23,8 @@ const App: React.FC = () => {
     isPlaying: false
   });
 
-  const generateRandomInterval = useCallback((minNote: Note, maxNote: Note, excludeBaseNote?: Note): IntervalPair | null => {
-    const minorSecond = INTERVALS[0]; // 1 semitone
-    const majorSecond = INTERVALS[1]; // 2 semitones
-    
-    // Randomly choose between minor and major second
-    const interval = Math.random() < 0.5 ? minorSecond : majorSecond;
+  const generateSpecificInterval = useCallback((minNote: Note, maxNote: Note, intervalType: 'minor' | 'major', excludeBaseNote?: Note): IntervalPair | null => {
+    const interval = intervalType === 'minor' ? INTERVALS[0] : INTERVALS[1]; // minor = 1 semitone, major = 2 semitones
     
     // Get valid base notes for this interval
     const validBaseNotes = getValidBaseNotes(minNote, maxNote, interval);
@@ -56,21 +52,24 @@ const App: React.FC = () => {
   const generateNewQuestion = useCallback(() => {
     const { minNote, maxNote } = gameState;
     
-    // Generate first interval
-    const pair1 = generateRandomInterval(minNote, maxNote);
+    // Randomly decide which interval comes first
+    const firstIsMinor = Math.random() < 0.5;
+    
+    // Generate first interval (minor or major)
+    const pair1 = generateSpecificInterval(minNote, maxNote, firstIsMinor ? 'minor' : 'major');
     if (!pair1) {
       console.error('Could not generate first interval');
       return;
     }
     
-    // Generate second interval with different base note
-    const pair2 = generateRandomInterval(minNote, maxNote, pair1.baseNote);
+    // Generate second interval (opposite type, with different base note)
+    const pair2 = generateSpecificInterval(minNote, maxNote, firstIsMinor ? 'major' : 'minor', pair1.baseNote);
     if (!pair2) {
       console.error('Could not generate second interval');
       return;
     }
     
-    // Determine which interval is larger
+    // Determine which interval is larger (major second is always larger)
     const correctAnswer: 1 | 2 = pair1.interval.semitones > pair2.interval.semitones ? 1 : 2;
     
     setGameState(prev => ({
@@ -81,7 +80,7 @@ const App: React.FC = () => {
       feedback: '',
       isPlaying: false
     }));
-  }, [generateRandomInterval, gameState]);
+  }, [generateSpecificInterval, gameState]);
 
   const handleGuess = useCallback((guess: 1 | 2) => {
     const { correctAnswer, currentPair1, currentPair2 } = gameState;
@@ -197,9 +196,15 @@ const App: React.FC = () => {
         <h3>How to Play</h3>
         <ol>
           <li>Select your preferred note range using the dropdowns above</li>
-          <li>Click "Start Game" - the intervals will play automatically</li>
+          <li>Click "Start Game" - both intervals will play automatically</li>
           <li>Each interval consists of two notes played in sequence</li>
-          <li>Use the "🔊 Replay Intervals" button to hear them again</li>
+          <li>Use replay buttons to hear them again:
+            <ul>
+              <li><strong>"🔊 Replay Both Intervals"</strong> - plays both in sequence</li>
+              <li><strong>"🔊 First Only"</strong> - plays just the first interval</li>
+              <li><strong>"🔊 Second Only"</strong> - plays just the second interval</li>
+            </ul>
+          </li>
           <li>Listen carefully and decide which interval is <strong>larger</strong> (more semitones)</li>
           <li>Click "First Interval" or "Second Interval" to make your guess</li>
           <li>The app will tell you if you're correct and show the interval types</li>
