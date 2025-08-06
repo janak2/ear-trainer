@@ -197,8 +197,9 @@ const App: React.FC = () => {
         <h3>How to Play</h3>
         <ol>
           <li>Select your preferred note range using the dropdowns above</li>
-          <li>Click "Start Game" or "Play Intervals" to hear two intervals</li>
+          <li>Click "Start Game" - the intervals will play automatically</li>
           <li>Each interval consists of two notes played in sequence</li>
+          <li>Use the "🔊 Replay Intervals" button to hear them again</li>
           <li>Listen carefully and decide which interval is <strong>larger</strong> (more semitones)</li>
           <li>Click "First Interval" or "Second Interval" to make your guess</li>
           <li>The app will tell you if you're correct and show the interval types</li>

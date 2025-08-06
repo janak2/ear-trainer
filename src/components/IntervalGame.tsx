@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { IntervalPair } from '../types';
 import { usePiano } from '../hooks/usePiano';
 
@@ -24,8 +24,9 @@ const IntervalGame: React.FC<IntervalGameProps> = ({
   isGameActive
 }) => {
   const { isLoading, isPlaying, playSequence } = usePiano();
+  const hasPlayedRef = useRef<string | null>(null);
 
-  const playBothIntervals = async () => {
+  const playBothIntervals = useCallback(async () => {
     if (!pair1 || !pair2 || isPlaying) return;
     
     const intervals = [
@@ -34,7 +35,27 @@ const IntervalGame: React.FC<IntervalGameProps> = ({
     ];
     
     await playSequence(intervals, 1500);
-  };
+  }, [pair1, pair2, isPlaying, playSequence]);
+
+  // Auto-play intervals when new question starts
+  useEffect(() => {
+    if (pair1 && pair2 && isGameActive && !isLoading) {
+      // Create a unique key for this question
+      const questionKey = `${pair1.baseNote.midiNumber}-${pair1.interval.semitones}-${pair2.baseNote.midiNumber}-${pair2.interval.semitones}`;
+      
+      // Only play if this is a new question
+      if (hasPlayedRef.current !== questionKey) {
+        hasPlayedRef.current = questionKey;
+        
+        // Small delay to ensure audio context is ready
+        const timer = setTimeout(() => {
+          playBothIntervals();
+        }, 500);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [pair1, pair2, isGameActive, isLoading, playBothIntervals]);
 
   const getFeedbackClass = () => {
     if (feedback.includes('Correct')) return 'feedback correct';
@@ -63,9 +84,10 @@ const IntervalGame: React.FC<IntervalGameProps> = ({
             <button 
               className="button" 
               onClick={playBothIntervals}
-              disabled={isPlaying || !isGameActive}
+              disabled={isPlaying}
+              style={{ fontSize: '1.1rem', padding: '0.75rem 2rem' }}
             >
-              {isPlaying ? 'Playing...' : 'Play Intervals'}
+              {isPlaying ? '🔊 Playing...' : '🔊 Replay Intervals'}
             </button>
           </div>
 

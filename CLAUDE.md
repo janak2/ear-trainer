@@ -35,5 +35,7 @@ This is an ear trainer React TypeScript application for interval recognition tra
 ### Game Logic
 - Users select note range (default C2 to B5)
 - App generates two intervals with different base notes within range
+- Intervals automatically play when new question starts
+- Users can replay intervals using the replay button
 - User identifies which interval is larger
 - Scoring system tracks correct/total answers with percentage
