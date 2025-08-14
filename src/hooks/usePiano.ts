@@ -42,7 +42,8 @@ export const usePiano = () => {
       }
 
       const midiName = noteToMidiName(note);
-      piano.start({ note: midiName, velocity: 90 });
+      // Ensure fixed note length using duration (in seconds)
+      piano.start({ note: midiName, velocity: 90, duration: duration / 1000 });
       // Let the note ring; we just wait the duration for sequencing purposes
       await new Promise((resolve) => setTimeout(resolve, duration));
     },
@@ -65,6 +66,8 @@ export const usePiano = () => {
         await new Promise((resolve) => setTimeout(resolve, noteDuration + gap));
         await playNote(secondNote, noteDuration);
         await new Promise((resolve) => setTimeout(resolve, noteDuration));
+        // Hard stop to avoid lingering tail
+        piano.stop();
       } finally {
         setIsPlaying(false);
       }
@@ -117,7 +120,8 @@ export const usePiano = () => {
             );
           }
         }
-        await new Promise((resolve) => setTimeout(resolve, noteDurationMs));
+        // Hard stop to avoid lingering tail after the full sequence
+        piano.stop();
       } finally {
         setIsPlaying(false);
       }
@@ -141,6 +145,8 @@ export const usePiano = () => {
         await new Promise((resolve) => setTimeout(resolve, noteDuration + gap));
         await playNote(secondNote, noteDuration);
         await new Promise((resolve) => setTimeout(resolve, noteDuration));
+        // Hard stop to avoid lingering tail
+        piano.stop();
       } finally {
         setIsPlaying(false);
       }
