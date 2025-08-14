@@ -1,19 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Note } from '../types';
+import { useState, useEffect, useCallback } from "react";
+import { Note } from "../types";
+import * as Tone from "tone";
 
 export const usePiano = () => {
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [synth, setSynth] = useState<Tone.Synth | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    const initializeAudio = () => {
+    const initializeAudio = async () => {
       try {
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        setAudioContext(ctx);
-        setIsLoading(false);
+        const synthInstance = new Tone.Synth({
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.01, decay: 0.1, sustain: 0.3, release: 0.8 },
+        }).toDestination();
+        setSynth(synthInstance);
       } catch (error) {
-        console.error('Failed to initialize audio:', error);
+        console.error("Failed to initialize synth:", error);
+      } finally {
         setIsLoading(false);
       }
     };
@@ -21,123 +25,104 @@ export const usePiano = () => {
     initializeAudio();
   }, []);
 
-  const noteToFrequency = useCallback((note: Note): number => {
-    // Convert MIDI number to frequency using A4 = 440 Hz as reference
-    return 440 * Math.pow(2, (note.midiNumber - 69) / 12);
+  const noteToMidiName = useCallback((note: Note): string => {
+    return `${note.name}${note.octave}`;
   }, []);
 
-  const playNote = useCallback(async (note: Note, duration: number = 1000) => {
-    if (!audioContext) return;
+  const playNote = useCallback(
+    async (note: Note, duration: number = 1000) => {
+      if (!synth) return;
 
-    // Resume audio context if suspended
-    if (audioContext.state === 'suspended') {
-      await audioContext.resume();
-    }
-
-    const frequency = noteToFrequency(note);
-    const now = audioContext.currentTime;
-    const durationInSeconds = duration / 1000;
-
-    // Create oscillator for the tone
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    // Set up oscillator
-    oscillator.type = 'triangle'; // Piano-like timbre
-    oscillator.frequency.setValueAtTime(frequency, now);
-
-    // Set up envelope (ADSR)
-    gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(0.3, now + 0.02); // Attack
-    gainNode.gain.exponentialRampToValueAtTime(0.1, now + 0.3); // Decay/Sustain
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + durationInSeconds); // Release
-
-    // Connect nodes
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    // Start and stop
-    oscillator.start(now);
-    oscillator.stop(now + durationInSeconds);
-  }, [audioContext, noteToFrequency]);
-
-  const playInterval = useCallback(async (baseNote: Note, secondNote: Note, noteDuration: number = 1000, gap: number = 100) => {
-    if (!audioContext || isPlaying) return;
-    
-    setIsPlaying(true);
-    
-    try {
-      // Play first note
-      await playNote(baseNote, noteDuration);
-      
-      // Wait for gap between notes
-      await new Promise(resolve => setTimeout(resolve, noteDuration + gap));
-      
-      // Play second note
-      await playNote(secondNote, noteDuration);
-      
-      // Wait for second note to finish
-      await new Promise(resolve => setTimeout(resolve, noteDuration));
-    } finally {
-      setIsPlaying(false);
-    }
-  }, [audioContext, isPlaying, playNote]);
-
-  const playSequence = useCallback(async (intervals: Array<{ baseNote: Note; secondNote: Note }>, sequenceGap: number = 1000) => {
-    if (!audioContext || isPlaying) return;
-    
-    setIsPlaying(true);
-    
-    try {
-      for (let i = 0; i < intervals.length; i++) {
-        const { baseNote, secondNote } = intervals[i];
-        
-        // Play the interval
-        await playNote(baseNote, 800);
-        await new Promise(resolve => setTimeout(resolve, 900));
-        await playNote(secondNote, 800);
-        
-        // Wait between intervals (except after the last one)
-        if (i < intervals.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, sequenceGap));
-        }
+      if (Tone.getContext().state !== "running") {
+        await Tone.start();
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 800));
-    } finally {
-      setIsPlaying(false);
-    }
-  }, [audioContext, isPlaying, playNote]);
 
-  const playSingleInterval = useCallback(async (baseNote: Note, secondNote: Note, noteDuration: number = 1000, gap: number = 100) => {
-    if (!audioContext || isPlaying) return;
-    
-    setIsPlaying(true);
-    
-    try {
-      // Play first note
-      await playNote(baseNote, noteDuration);
-      
-      // Wait for gap between notes
-      await new Promise(resolve => setTimeout(resolve, noteDuration + gap));
-      
-      // Play second note
-      await playNote(secondNote, noteDuration);
-      
-      // Wait for second note to finish
-      await new Promise(resolve => setTimeout(resolve, noteDuration));
-    } finally {
-      setIsPlaying(false);
-    }
-  }, [audioContext, isPlaying, playNote]);
+      const midiName = noteToMidiName(note);
+      const durationSeconds = duration / 1000;
+      synth.triggerAttackRelease(midiName, durationSeconds);
+    },
+    [synth, noteToMidiName]
+  );
+
+  const playInterval = useCallback(
+    async (
+      baseNote: Note,
+      secondNote: Note,
+      noteDuration: number = 1000,
+      gap: number = 100
+    ) => {
+      if (!synth || isPlaying) return;
+
+      setIsPlaying(true);
+
+      try {
+        await playNote(baseNote, noteDuration);
+        await new Promise((resolve) => setTimeout(resolve, noteDuration + gap));
+        await playNote(secondNote, noteDuration);
+        await new Promise((resolve) => setTimeout(resolve, noteDuration));
+      } finally {
+        setIsPlaying(false);
+      }
+    },
+    [synth, isPlaying, playNote]
+  );
+
+  const playSequence = useCallback(
+    async (
+      intervals: Array<{ baseNote: Note; secondNote: Note }>,
+      sequenceGap: number = 1000
+    ) => {
+      if (!synth || isPlaying) return;
+
+      setIsPlaying(true);
+
+      try {
+        for (let i = 0; i < intervals.length; i++) {
+          const { baseNote, secondNote } = intervals[i];
+          await playNote(baseNote, 800);
+          await new Promise((resolve) => setTimeout(resolve, 900));
+          await playNote(secondNote, 800);
+          if (i < intervals.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, sequenceGap));
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      } finally {
+        setIsPlaying(false);
+      }
+    },
+    [synth, isPlaying, playNote]
+  );
+
+  const playSingleInterval = useCallback(
+    async (
+      baseNote: Note,
+      secondNote: Note,
+      noteDuration: number = 1000,
+      gap: number = 100
+    ) => {
+      if (!synth || isPlaying) return;
+
+      setIsPlaying(true);
+
+      try {
+        await playNote(baseNote, noteDuration);
+        await new Promise((resolve) => setTimeout(resolve, noteDuration + gap));
+        await playNote(secondNote, noteDuration);
+        await new Promise((resolve) => setTimeout(resolve, noteDuration));
+      } finally {
+        setIsPlaying(false);
+      }
+    },
+    [synth, isPlaying, playNote]
+  );
 
   return {
-    audioContext,
     isLoading,
     isPlaying,
     playNote,
     playInterval,
     playSingleInterval,
-    playSequence
+    playSequence,
   };
 };
