@@ -201,7 +201,7 @@ const App: React.FC = () => {
 
   return (
     <div className="container">
-      <h1 style={{ textAlign: "center", marginBottom: "2rem" }}>
+      <h1 style={{ textAlign: "center", marginBottom: "1rem" }}>
         Ear Trainer - Interval Recognition
       </h1>
 
@@ -267,52 +267,6 @@ const App: React.FC = () => {
           </button>
         </div>
       )}
-
-      <div className="card">
-        <h3>How to Play</h3>
-        <ol>
-          <li>Select your preferred note range using the dropdowns above</li>
-          <li>Click "Start Game" - both intervals will play automatically</li>
-          <li>Each interval consists of two notes played in sequence</li>
-          <li>
-            Use replay buttons to hear them again:
-            <ul>
-              <li>
-                <strong>"🔊 Replay Both Intervals"</strong> - plays both in
-                sequence
-              </li>
-              <li>
-                <strong>"🔊 First Only"</strong> - plays just the first interval
-              </li>
-              <li>
-                <strong>"🔊 Second Only"</strong> - plays just the second
-                interval
-              </li>
-            </ul>
-          </li>
-          <li>
-            Listen carefully and decide which interval is{" "}
-            <strong>larger</strong> (more semitones)
-          </li>
-          <li>
-            Click "First Interval" or "Second Interval" to make your guess
-          </li>
-          <li>
-            The app will tell you if you're correct and show the interval types
-          </li>
-        </ol>
-        <p>
-          <strong>Interval Types:</strong>
-        </p>
-        <ul>
-          <li>
-            <strong>Minor Second:</strong> 1 semitone (e.g., C to C#)
-          </li>
-          <li>
-            <strong>Major Second:</strong> 2 semitones (e.g., C to D)
-          </li>
-        </ul>
-      </div>
     </div>
   );
 };
