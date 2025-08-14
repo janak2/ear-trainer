@@ -1,22 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
 import { Note } from "../types";
-import * as Tone from "tone";
+import { SplendidGrandPiano } from "smplr";
 
 export const usePiano = () => {
-  const [synth, setSynth] = useState<Tone.Synth | null>(null);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [piano, setPiano] = useState<SplendidGrandPiano | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const initializeAudio = async () => {
       try {
-        const synthInstance = new Tone.Synth({
-          oscillator: { type: "sine" },
-          envelope: { attack: 0.01, decay: 0.1, sustain: 0.3, release: 0.8 },
-        }).toDestination();
-        setSynth(synthInstance);
+        const ctx = new (window.AudioContext ||
+          (window as any).webkitAudioContext)();
+        setAudioContext(ctx);
+        const instrument = new SplendidGrandPiano(ctx);
+        await instrument.load;
+        setPiano(instrument);
       } catch (error) {
-        console.error("Failed to initialize synth:", error);
+        console.error("Failed to initialize piano:", error);
       } finally {
         setIsLoading(false);
       }
@@ -31,17 +33,20 @@ export const usePiano = () => {
 
   const playNote = useCallback(
     async (note: Note, duration: number = 1000) => {
-      if (!synth) return;
+      if (!audioContext || !piano) return;
 
-      if (Tone.getContext().state !== "running") {
-        await Tone.start();
+      if (audioContext.state !== "running") {
+        try {
+          await audioContext.resume();
+        } catch {}
       }
 
       const midiName = noteToMidiName(note);
-      const durationSeconds = duration / 1000;
-      synth.triggerAttackRelease(midiName, durationSeconds);
+      piano.start({ note: midiName, velocity: 90 });
+      // Let the note ring; we just wait the duration for sequencing purposes
+      await new Promise((resolve) => setTimeout(resolve, duration));
     },
-    [synth, noteToMidiName]
+    [audioContext, piano, noteToMidiName]
   );
 
   const playInterval = useCallback(
@@ -51,7 +56,7 @@ export const usePiano = () => {
       noteDuration: number = 1000,
       gap: number = 100
     ) => {
-      if (!synth || isPlaying) return;
+      if (!piano || isPlaying) return;
 
       setIsPlaying(true);
 
@@ -64,7 +69,7 @@ export const usePiano = () => {
         setIsPlaying(false);
       }
     },
-    [synth, isPlaying, playNote]
+    [piano, isPlaying, playNote]
   );
 
   const playSequence = useCallback(
@@ -72,7 +77,7 @@ export const usePiano = () => {
       intervals: Array<{ baseNote: Note; secondNote: Note }>,
       sequenceGap: number = 1000
     ) => {
-      if (!synth || isPlaying) return;
+      if (!piano || isPlaying) return;
 
       setIsPlaying(true);
 
@@ -91,7 +96,7 @@ export const usePiano = () => {
         setIsPlaying(false);
       }
     },
-    [synth, isPlaying, playNote]
+    [piano, isPlaying, playNote]
   );
 
   const playSingleInterval = useCallback(
@@ -101,7 +106,7 @@ export const usePiano = () => {
       noteDuration: number = 1000,
       gap: number = 100
     ) => {
-      if (!synth || isPlaying) return;
+      if (!piano || isPlaying) return;
 
       setIsPlaying(true);
 
@@ -114,7 +119,7 @@ export const usePiano = () => {
         setIsPlaying(false);
       }
     },
-    [synth, isPlaying, playNote]
+    [piano, isPlaying, playNote]
   );
 
   return {
