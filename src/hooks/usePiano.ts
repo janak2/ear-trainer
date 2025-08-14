@@ -75,23 +75,49 @@ export const usePiano = () => {
   const playSequence = useCallback(
     async (
       intervals: Array<{ baseNote: Note; secondNote: Note }>,
-      sequenceGap: number = 1000
+      options?:
+        | number
+        | {
+            noteDurationMs?: number;
+            gapBetweenNotesMs?: number;
+            gapBetweenIntervalsMs?: number;
+          }
     ) => {
       if (!piano || isPlaying) return;
+
+      const noteDurationMs =
+        typeof options === "object" && options?.noteDurationMs !== undefined
+          ? options.noteDurationMs
+          : 800;
+      const gapBetweenNotesMs =
+        typeof options === "object" && options?.gapBetweenNotesMs !== undefined
+          ? options.gapBetweenNotesMs
+          : 900;
+      const gapBetweenIntervalsMs =
+        typeof options === "number"
+          ? options
+          : typeof options === "object" &&
+            options?.gapBetweenIntervalsMs !== undefined
+          ? options.gapBetweenIntervalsMs
+          : 1000;
 
       setIsPlaying(true);
 
       try {
         for (let i = 0; i < intervals.length; i++) {
           const { baseNote, secondNote } = intervals[i];
-          await playNote(baseNote, 800);
-          await new Promise((resolve) => setTimeout(resolve, 900));
-          await playNote(secondNote, 800);
+          await playNote(baseNote, noteDurationMs);
+          await new Promise((resolve) =>
+            setTimeout(resolve, gapBetweenNotesMs)
+          );
+          await playNote(secondNote, noteDurationMs);
           if (i < intervals.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, sequenceGap));
+            await new Promise((resolve) =>
+              setTimeout(resolve, gapBetweenIntervalsMs)
+            );
           }
         }
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        await new Promise((resolve) => setTimeout(resolve, noteDurationMs));
       } finally {
         setIsPlaying(false);
       }

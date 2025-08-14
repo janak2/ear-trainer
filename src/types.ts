@@ -24,5 +24,6 @@ export interface GameState {
   score: number;
   totalQuestions: number;
   feedback: string;
+  tempoBpm: number;
   isPlaying: boolean;
 }

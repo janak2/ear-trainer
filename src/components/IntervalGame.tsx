@@ -11,6 +11,7 @@ interface IntervalGameProps {
   totalQuestions: number;
   onNewQuestion: () => void;
   isGameActive: boolean;
+  tempoBpm: number;
 }
 
 const IntervalGame: React.FC<IntervalGameProps> = ({
@@ -22,6 +23,7 @@ const IntervalGame: React.FC<IntervalGameProps> = ({
   totalQuestions,
   onNewQuestion,
   isGameActive,
+  tempoBpm,
 }) => {
   const { isLoading, isPlaying, playSequence, playSingleInterval } = usePiano();
   const hasPlayedRef = useRef<string | null>(null);
@@ -29,23 +31,44 @@ const IntervalGame: React.FC<IntervalGameProps> = ({
   const playBothIntervals = useCallback(async () => {
     if (!pair1 || !pair2 || isPlaying) return;
 
+    const beatMs = 60000 / tempoBpm;
+    const noteDurationMs = Math.round(beatMs);
+    const gapBetweenNotesMs = Math.round(0.25 * beatMs);
+    const gapBetweenIntervalsMs = Math.round(2 * beatMs);
+
     const intervals = [
       { baseNote: pair1.baseNote, secondNote: pair1.secondNote },
       { baseNote: pair2.baseNote, secondNote: pair2.secondNote },
     ];
 
-    await playSequence(intervals, 1500);
-  }, [pair1, pair2, isPlaying, playSequence]);
+    await playSequence(intervals, {
+      noteDurationMs,
+      gapBetweenNotesMs,
+      gapBetweenIntervalsMs,
+    });
+  }, [pair1, pair2, isPlaying, playSequence, tempoBpm]);
 
   const playFirstInterval = useCallback(async () => {
     if (!pair1 || isPlaying) return;
-    await playSingleInterval(pair1.baseNote, pair1.secondNote, 800);
-  }, [pair1, isPlaying, playSingleInterval]);
+    const beatMs = 60000 / tempoBpm;
+    await playSingleInterval(
+      pair1.baseNote,
+      pair1.secondNote,
+      Math.round(beatMs),
+      Math.round(0.25 * beatMs)
+    );
+  }, [pair1, isPlaying, playSingleInterval, tempoBpm]);
 
   const playSecondInterval = useCallback(async () => {
     if (!pair2 || isPlaying) return;
-    await playSingleInterval(pair2.baseNote, pair2.secondNote, 800);
-  }, [pair2, isPlaying, playSingleInterval]);
+    const beatMs = 60000 / tempoBpm;
+    await playSingleInterval(
+      pair2.baseNote,
+      pair2.secondNote,
+      Math.round(beatMs),
+      Math.round(0.25 * beatMs)
+    );
+  }, [pair2, isPlaying, playSingleInterval, tempoBpm]);
 
   // Auto-play intervals when new question starts
   useEffect(() => {
